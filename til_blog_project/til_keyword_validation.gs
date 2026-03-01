@@ -37,6 +37,7 @@ function checkBlogLinks() {
 
       /* =========================
          2) 제목 검사 (F열)
+         - og:title 파싱을 더 튼튼하게 개선
       ========================== */
       let title = "";
 
@@ -48,11 +49,16 @@ function checkBlogLinks() {
 
       // 공통 og:title → 없으면 title fallback
       if (!title) {
-        const ogMatch = content.match(/property="og:title"\s*content="(.*?)"/i);
-        if (ogMatch && ogMatch[1]) {
-          title = ogMatch[1];
-        } else {
-          const basicMatch = content.match(/<title[^>]*>(.*?)<\/title>/i);
+        // ✅ (개선) og:title meta 태그를 먼저 찾고 content 속성을 추출
+        const ogTag = content.match(/<meta[^>]*\bog:title\b[^>]*>/i);
+        if (ogTag && ogTag[0]) {
+          const cm = ogTag[0].match(/\bcontent\s*=\s*["']([^"']*)["']/i);
+          if (cm && cm[1]) title = cm[1];
+        }
+
+        // 그래도 없으면 <title> fallback
+        if (!title) {
+          const basicMatch = content.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
           title = basicMatch && basicMatch[1] ? basicMatch[1] : "";
         }
       }
@@ -123,7 +129,6 @@ function checkBlogLinks() {
 
       /* 🟣 티스토리: "태그 컨테이너" 안에서만 태그 추출 (사이드바/태그클라우드 오인 방지) */
       if (url.includes("tistory.com")) {
-        // 태그가 들어있는 컨테이너 후보들 (사용자가 제공한 패턴 + box-tag)
         const tagContainerRegexes = [
           /<div[^>]*class=["'][^"']*\bentry-tag\b[^"']*["'][^>]*>[\s\S]*?<\/div>/i,
           /<div[^>]*class=["'][^"']*\btags\b[^"']*["'][^>]*>[\s\S]*?<\/div>/i,
@@ -135,7 +140,6 @@ function checkBlogLinks() {
           /<div[^>]*id=["']tags["'][^>]*>[\s\S]*?<\/div>/i,
         ];
 
-        // 컨테이너 매칭된 부분만 scope로 합치기
         let scope = "";
         tagContainerRegexes.forEach(re => {
           const m = content.match(re);
@@ -154,7 +158,6 @@ function checkBlogLinks() {
         }
 
         // 보완: rel="tag"가 없는 스킨이면 scope 안에서만 /tag/ 링크 fallback
-        // ⚠️ content 전체에서 찾지 않음(오탐 방지)
         if (tags.length === 0 && scope) {
           const tagLinks = scope.match(/\/tag\/([^"'<> ]+)/g);
           if (tagLinks) {
