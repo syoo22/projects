@@ -33,6 +33,9 @@ def create_database():
                 "회사명": {
                     "rich_text": {}
                 },
+                "시작일": {
+                    "date": {}
+                },
                 "마감일": {
                     "date": {}
                 },

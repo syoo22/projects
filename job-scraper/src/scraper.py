@@ -54,22 +54,21 @@ def scrape_jobs() -> List[Dict[str, Any]]:
             
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
-            
+
             data = response.json()
-            companies = data.get('data', [])
-            
+            # API response is directly a list, or wrapped in 'data' key
+            companies = data if isinstance(data, list) else data.get('data', [])
+
             if not companies:
                 print(f"No more data at page {page}")
                 break
             
             for company in companies:
                 title = company.get('title', '')
-                company_size = company.get('company_size', '')
                 created_date = company.get('created_at', '')
 
-                # Apply all filters
-                if not is_target_company_size(company_size):
-                    continue
+                # Apply filters: "신입" keyword and date cutoff
+                # Note: company_size is not available in API response
                 if not has_required_keyword_in_title(title):
                     continue
                 if not is_after_cutoff_date(created_date):
