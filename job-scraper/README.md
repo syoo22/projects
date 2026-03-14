@@ -184,6 +184,17 @@ python src/create_notion_db.py
 
 ## 📄 파일 구조
 
+  필수 파일 (7개)                                                                             
+  job-scraper/                                                                             
+  ├── src/        
+  │   ├── main.py              ⭐ 메인 실행 파일
+  │   ├── config.py            ⭐ 설정 (API, 필터, 환경변수)
+  │   ├── scraper.py           ⭐ 웹 스크래핑 로직
+  │   ├── notion_uploader.py   ⭐ Notion 업로드
+  │   └── create_notion_db.py  📋 DB 생성 도우미
+  ├── requirements.txt         ⭐ Python 의존성
+  └── .env                     ⭐ 환경변수 (NOTION_TOKEN, DATABASE_ID)
+
 ```
  ┌─────────────────────┬────────────────────────────────────┬──────┐
   │        파일         │                역할                │ 필수 │
