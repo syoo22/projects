@@ -2,7 +2,7 @@ import requests
 import time
 from typing import List, Dict, Any
 from datetime import datetime
-from config import API_BASE_URL, PER_PAGE, REQUEST_DELAY, MAX_PAGES, KEYWORDS, JOB_DETAIL_URL_TEMPLATE
+from config import API_BASE_URL, PER_PAGE, REQUEST_DELAY, MAX_PAGES, COMPANY_SIZES, REQUIRED_KEYWORD, CUTOFF_DATE, JOB_DETAIL_URL_TEMPLATE
 
 def parse_date(date_string: str) -> str:
     """Parse ISO8601 date string and return YYYY-MM-DD format."""
@@ -15,13 +15,27 @@ def parse_date(date_string: str) -> str:
         print(f"Error parsing date {date_string}: {e}")
         return None
 
-def matches_keywords(employments: List[Dict[str, Any]]) -> bool:
-    """Check if any job field matches keywords (or return True if no keywords specified)."""
-    if not KEYWORDS:
-        return True
-    
-    fields = [emp.get('field', '').lower() for emp in employments]
-    return any(keyword.lower() in ' '.join(fields) for keyword in KEYWORDS)
+def is_target_company_size(company_size: str) -> bool:
+    """Check if company size matches target sizes."""
+    if not company_size:
+        return False
+    return company_size in COMPANY_SIZES
+
+def has_required_keyword_in_title(title: str) -> bool:
+    """Check if job title contains '신입' keyword."""
+    if not title:
+        return False
+    return REQUIRED_KEYWORD in title
+
+def is_after_cutoff_date(created_date: str) -> bool:
+    """Check if job was posted on or after cutoff date."""
+    if not created_date:
+        return False
+    try:
+        job_date = datetime.fromisoformat(created_date.replace('Z', '+00:00')).strftime('%Y-%m-%d')
+        return job_date >= CUTOFF_DATE
+    except Exception:
+        return False
 
 def scrape_jobs() -> List[Dict[str, Any]]:
     """
@@ -49,19 +63,30 @@ def scrape_jobs() -> List[Dict[str, Any]]:
                 break
             
             for company in companies:
+                title = company.get('title', '')
+                company_size = company.get('company_size', '')
+                created_date = company.get('created_at', '')
+
+                # Apply all filters
+                if not is_target_company_size(company_size):
+                    continue
+                if not has_required_keyword_in_title(title):
+                    continue
+                if not is_after_cutoff_date(created_date):
+                    continue
+
                 # Extract relevant fields
                 job = {
                     'id': company.get('id'),
-                    'title': company.get('title'),
+                    'title': title,
                     'company_name': company.get('name'),
+                    'start_time': parse_date(company.get('start_time')),
                     'end_time': parse_date(company.get('end_time')),
                     'employments': company.get('employments', []),
                     'url': JOB_DETAIL_URL_TEMPLATE.format(id=company.get('id'))
                 }
-                
-                # Filter by keywords
-                if matches_keywords(job['employments']):
-                    jobs.append(job)
+
+                jobs.append(job)
             
             print(f"Fetched page {page}: {len(companies)} items")
             time.sleep(REQUEST_DELAY)

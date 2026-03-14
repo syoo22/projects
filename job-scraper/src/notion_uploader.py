@@ -68,6 +68,11 @@ class NotionUploader:
                         }
                     ]
                 },
+                "시작일": {
+                    "date": {
+                        "start": job['start_time'] if job['start_time'] else None
+                    }
+                } if job['start_time'] else {},
                 "마감일": {
                     "date": {
                         "start": job['end_time'] if job['end_time'] else None
@@ -88,8 +93,10 @@ class NotionUploader:
                 }
             }
             
-            # Remove empty date property
-            if not properties["마감일"]:
+            # Remove empty date properties
+            if not properties.get("시작일"):
+                del properties["시작일"]
+            if not properties.get("마감일"):
                 del properties["마감일"]
             
             page = self.client.pages.create(

@@ -13,8 +13,14 @@ if not NOTION_TOKEN:
 if not DATABASE_ID:
     raise ValueError("NOTION_DATABASE_ID environment variable is not set")
 
-# Keywords to filter jobs (empty list = collect all)
-KEYWORDS = ["백엔드", "서버", "Python"]
+# Company size to filter jobs
+COMPANY_SIZES = ["대기업", "중견기업"]
+
+# Required keyword in job title
+REQUIRED_KEYWORD = "신입"
+
+# Cutoff date for job postings
+CUTOFF_DATE = "2026-03-01"
 
 # API request settings
 REQUEST_DELAY = 1.0  # delay between requests (seconds)
