@@ -16,7 +16,7 @@
    └────────────────────────┘
         ↓
    ┌────────────────────────┐
-   │ 3. 필터링             │  ← 키워드로 필터 (예: "백엔드", "Python")
+   │ 3. 필터링             │  ← 회사 규모, "신입" 키워드, 기간으로 필터
    └────────────────────────┘
         ↓
    ┌────────────────────────┐
@@ -35,15 +35,17 @@
 ### **1️⃣ `src/config.py` - 설정**
 
 ```python
-NOTION_TOKEN = "ntn_o62994513982L4vrQ4VTJNe1jZeVWDnGawjtlxy8QEV08d"
-DATABASE_ID = "3231777a00068000ad06d5819fb167a1"
-KEYWORDS = ["백엔드", "서버", "Python"]  # 수집할 직무
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+COMPANY_SIZES = ["대기업", "중견기업"]  # 수집할 회사 규모
+REQUIRED_KEYWORD = "신입"               # 공고 제목에 포함되어야 함
+CUTOFF_DATE = "2026-03-01"              # 수집 시작 날짜
 ```
 
 **역할:**
 - 환경변수 (.env 파일) 로드
 - Notion API 인증 정보 관리
-- 필터링 키워드 설정
+- 필터링 설정 (회사 규모, 신입 공고, 기간)
 - API 기본 URL 설정
 - 요청 타임아웃, 페이지 수 등 설정값 관리
 
@@ -60,9 +62,11 @@ https://jasoseol.com/api/v1/employment_companies?page=1&per_page=20
 JSON 응답 파싱:
   - id → 공고 ID
   - name → 회사명
+  - company_size → 회사 규모
   - title → 공고 제목
-  - end_time → 마감일
-  - employments[].field → 직무 (예: "백엔드", "데이터")
+  - start_time → 공고 시작일
+  - end_time → 공고 마감일
+  - created_at → 공고 등록일
       ↓
 표준화된 딕셔너리로 변환
 ```
@@ -71,22 +75,22 @@ JSON 응답 파싱:
 
 | 메서드 | 역할 |
 |--------|------|
-| `fetch_all_jobs()` | 모든 페이지를 순회하며 공고 수집 (페이지네이션 처리) |
-| `_fetch_page(page)` | 특정 페이지의 공고 가져오기 |
-| `parse_job(raw_job)` | API 응답을 정제된 형식으로 변환 |
-| `_extract_fields(employments)` | 직무 배열에서 유니크한 필드만 추출 |
-| `_parse_date(date_str)` | ISO8601 날짜를 YYYY-MM-DD로 변환 |
-| `filter_jobs_by_keywords(jobs)` | 키워드와 매칭되는 공고만 필터링 |
+| `scrape_jobs()` | 모든 페이지를 순회하며 공고 수집 & 필터링 (페이지네이션 처리) |
+| `parse_date(date_str)` | ISO8601 날짜를 YYYY-MM-DD로 변환 |
+| `is_target_company_size(company_size)` | 회사 규모가 대기업/중견기업인지 확인 |
+| `has_required_keyword_in_title(title)` | 공고 제목에 "신입"이 포함되어 있는지 확인 |
+| `is_after_cutoff_date(created_date)` | 공고가 2026-03-01 이후에 등록되었는지 확인 |
+| `get_job_fields(job)` | 직무 배열에서 유니크한 필드만 추출 |
 
 **출력 형식:**
 ```python
 {
     "title": "2026년 상반기 신입사원 채용",
-    "company": "삼성전자",
-    "end_date": "2026-03-17",
-    "fields": ["백엔드", "데이터"],
-    "url": "https://jasoseol.com/recruit/102920",
-    "scraped_at": "2026-03-14"
+    "company_name": "삼성전자",
+    "start_time": "2026-03-10",
+    "end_time": "2026-03-17",
+    "employments": [...],  # 직무 정보
+    "url": "https://jasoseol.com/recruit/102920"
 }
 ```
 
@@ -113,6 +117,7 @@ URL Set으로 변환 (빠른 조회)
 
 공고 제목      → Title (필수, 첫 번째 열)
 회사명        → Rich Text
+시작일        → Date
 마감일        → Date
 직무 태그      → Multi-select (배열)
 링크          → URL
@@ -155,26 +160,21 @@ for 각 공고:
    existing_urls = uploader.get_existing_urls()
    → Notion에 몇 개가 이미 있는지 확인
 
-3. 공고 수집
-   raw_jobs = scraper.fetch_all_jobs()
-   → 자소설닷컴에서 모든 공고 가져오기
+3. 공고 수집 & 필터링
+   jobs = scraper.scrape_jobs()
+   → 자소설닷컴에서 공고 수집
+   → 회사 규모 (대기업/중견기업) 필터
+   → 제목에 "신입" 포함 여부 확인
+   → 2026-03-01 이후 등록 공고만 선별
 
-4. 파싱
-   parsed_jobs = [scraper.parse_job(job) for job in raw_jobs]
-   → API 응답을 정제된 형식으로 변환
-
-5. 필터링
-   filtered_jobs = scraper.filter_jobs_by_keywords(parsed_jobs)
-   → 키워드와 매칭되는 공고만 선별
-
-6. Notion 저장
-   stats = uploader.upload_jobs(filtered_jobs)
+4. Notion 저장
+   stats = uploader.upload_jobs(jobs)
    → 중복 체크 후 신규 공고만 저장
 
-7. 결과 출력
-   print(f"Collected: {stats['collected']} jobs")
-   print(f"New saved: {stats['saved']} jobs")
-   print(f"Skipped: {stats['skipped']} jobs")
+5. 결과 출력
+   print(f"Total jobs found: {stats['total']} jobs")
+   print(f"New jobs added: {stats['new']} jobs")
+   print(f"Duplicates skipped: {stats['skipped']} jobs")
 ```
 
 ---
@@ -233,14 +233,20 @@ jobs:
 
 [3단계] 필터링
 ┌─────────────────────────────────────┐
-│ KEYWORDS = ["백엔드", "Python"]     │
+│ 조건 1: 회사 규모 = 대기업/중견기업 │
+│ 조건 2: 제목에 "신입" 포함          │
+│ 조건 3: 2026-03-01 이후 등록        │
 │                                     │
-│ 공고 1: "백엔드 개발자" ✅ 포함      │
-│ 공고 2: "마케팅" ❌ 제외            │
-│ 공고 3: "Python 엔지니어" ✅ 포함   │
-│ ...                                 │
+│ 공고 1: "삼성 신입 개발자" ✅       │
+│   → 대기업, "신입" 포함, 2026.3.5  │
 │                                     │
-│ 필터링 후: 15개                     │
+│ 공고 2: "스타트업 경력직" ❌        │
+│   → 중견기업이 아님, "신입" 없음   │
+│                                     │
+│ 공고 3: "LG 신입 채용" ✅           │
+│   → 대기업, "신입" 포함, 2026.3.8  │
+│                                     │
+│ 필터링 후: 8개                      │
 └─────────────────────────────────────┘
 
 [4단계] 중복 체크
@@ -257,7 +263,7 @@ jobs:
 │ 결과: 8개 신규, 7개 중복            │
 └─────────────────────────────────────┘
 
-[5단계] Notion 저장
+[4단계] Notion 저장
 ┌─────────────────────────────────────┐
 │ for 8개 신규 공고:                   │
 │   Notion API 호출                    │
@@ -265,6 +271,7 @@ jobs:
 │   → 데이터 입력:                     │
 │     - 공고 제목                      │
 │     - 회사명                         │
+│     - 시작일                         │
 │     - 마감일                         │
 │     - 직무 태그                      │
 │     - 링크                           │
@@ -277,9 +284,9 @@ jobs:
 ==================================================
 SCRAPING COMPLETE
 ==================================================
-Collected:  200 jobs
-New saved:  8 jobs
-Skipped:    7 jobs (duplicates)
+Total jobs found:     40 jobs
+New jobs added:       8 jobs
+Duplicates skipped:   7 jobs
 ==================================================
 ```
 
@@ -291,7 +298,7 @@ Skipped:    7 jobs (duplicates)
 |------|------|
 | **Selenium 안 씀** | 자소설닷컴이 공식 REST API 제공 → requests만으로 충분, 빠름 |
 | **URL 기반 중복 체크** | Notion DB가 source of truth → 가장 정확하고 신뢰할 수 있음 |
-| **키워드 필터** | 관심 있는 직무만 수집 → 불필요한 알림 제거 |
+| **다층 필터링** | 회사 규모, "신입" 키워드, 등록 기간 → 관심 공고만 수집 |
 | **GitHub Actions 자동화** | 매일 자동 실행 → 수동 작업 없음 |
 | **상세 로그** | 수집/저장/스킵 개수 출력 → 정상 작동 확인 가능 |
 | **단일 책임 원칙** | 각 모듈이 한 가지만 담당 → 유지보수 용이 |
@@ -368,8 +375,10 @@ for job in new_jobs:
 - Integration이 데이터베이스와 공유되었는지 확인
 
 ### 공고가 추가되지 않음
-- KEYWORDS 설정 확인 (빈 리스트면 전체 수집)
-- 자소설닷컴 사이트에서 해당 공고 존재하는지 확인
+- COMPANY_SIZES 설정 확인 (대기업, 중견기업이 맞는지)
+- REQUIRED_KEYWORD = "신입" 확인 (제목에 포함되어야 함)
+- CUTOFF_DATE 설정 확인 (현재 날짜보다 과거인지)
+- 자소설닷컴 사이트에서 해당 조건의 공고 존재하는지 확인
 - GitHub Actions 로그에서 에러 메시지 확인
 
 ---
