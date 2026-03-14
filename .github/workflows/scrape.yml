@@ -26,4 +26,4 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        run: python src/main.py
+        run: cd job-scraper/src && python main.py
