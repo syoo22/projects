@@ -220,5 +220,25 @@ python src/create_notion_db.py
   # 2. 프로세스 실행
   python src/main.py
 ---
+ 📁 GitHub에 저장할 파일 구조
 
+  job-scraper/
+  │
+  ├── .env                          # ⚠️ Git에 업로드 하지 말 것!
+  │                                 #   (로컬에만 보관, .gitignore에 추가)
+  ├── .gitignore                    # Git 무시 파일 목록
+  ├── requirements.txt              # Python 의존성
+  ├── README.md                     # 프로젝트 설명서
+  │
+  └── src/
+      ├── main.py                   # 메인 실행 파일
+      ├── config.py                 # 설정
+      ├── scraper.py                # 스크래핑 로직
+      ├── notion_uploader.py        # Notion 업로드
+      └── create_notion_db.py       # DB 생성 도우미
+
+
+
+
+      
 **마지막 업데이트**: 2026-03-14
