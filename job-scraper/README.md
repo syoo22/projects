@@ -121,7 +121,6 @@ Errors:               0
 |------|------|------|
 | "신입" 키워드 | ✅ 활성화 | 공고 제목에 "신입" 포함 필수 |
 | 날짜 필터 | ✅ 활성화 | 2026-03-01 이후 공고만 수집 |
-| 회사 규모 | ❌ 미지원 | API 응답에 company_size 필드 없음 |
 
 ---
 
@@ -134,15 +133,6 @@ Errors:               0
 | `EMAIL_SENDER` | 발신 Gmail 주소 | `your-email@gmail.com` |
 | `EMAIL_PASSWORD` | Gmail 앱 비밀번호 | `xyzabc...` (16자) |
 | `EMAIL_RECIPIENT` | 수신자 이메일 | `your-email@gmail.com` |
-
----
-
-## 📝 Notion 데이터베이스 설정
-
-Notion에서 '스크랩 날짜' 필드 설정:
-1. 필드 우클릭 → 수정
-2. ☑️ "Include time" 체크
-3. Time zone → **Asia/Seoul** 선택
 
 ---
 
@@ -208,22 +198,6 @@ job-scraper/
 ├── README.md                 # 기본 정보
 └── PROJECT_DESCRIPTION.md   # 상세 설명 (이 파일)
 ```
-
----
-
-## 🎯 향후 계획
-
-- [ ] 회사 규모 필터링 (API 지원 시)
-- [ ] 추가 필터링 옵션 (직무, 급여 등)
-- [ ] 이메일 본문 HTML 포매팅
-- [ ] Slack 알림 통합
-- [ ] 웹 대시보드 추가
-
----
-
-## 📝 라이선스
-
-MIT License
 
 ---
 
