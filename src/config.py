@@ -1,0 +1,30 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Notion API credentials
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+
+# Validate required environment variables
+if not NOTION_TOKEN:
+    raise ValueError("NOTION_TOKEN environment variable is not set")
+if not DATABASE_ID:
+    raise ValueError("NOTION_DATABASE_ID environment variable is not set")
+
+# Company size to filter jobs
+COMPANY_SIZES = ["대기업", "중견기업"]
+
+# Required keyword in job title
+REQUIRED_KEYWORD = "신입"
+
+# Cutoff date for job postings
+CUTOFF_DATE = "2026-03-01"
+
+# API request settings
+REQUEST_DELAY = 1.0  # delay between requests (seconds)
+MAX_PAGES = 10       # max pages to fetch
+PER_PAGE = 20        # items per page
+API_BASE_URL = "https://jasoseol.com/api/v1"
+JOB_DETAIL_URL_TEMPLATE = "https://jasoseol.com/recruit/{id}"
