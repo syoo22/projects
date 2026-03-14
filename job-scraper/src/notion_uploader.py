@@ -1,11 +1,7 @@
 from notion_client import Client
 from typing import List, Dict, Any, Set
 from datetime import datetime
-from zoneinfo import ZoneInfo
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from config import NOTION_TOKEN, DATABASE_ID, SMTP_SERVER, SMTP_PORT, EMAIL_SENDER, EMAIL_PASSWORD, EMAIL_RECIPIENT
+from config import NOTION_TOKEN, DATABASE_ID
 from scraper import get_job_fields
 
 class NotionUploader:
@@ -92,8 +88,7 @@ class NotionUploader:
                 },
                 "스크랩 날짜": {
                     "date": {
-                        "start": datetime.now(ZoneInfo("Asia/Seoul")).strftime('%Y-%m-%dT%H:%M:%S'),
-                        "time_zone": "Asia/Seoul"
+                        "start": datetime.now().strftime('%Y-%m-%d')
                     }
                 }
             }
@@ -116,60 +111,17 @@ class NotionUploader:
             print(f"Error creating page for {job['title']}: {e}")
             return False
     
-    def send_completion_email(self, stats: Dict[str, int]) -> bool:
-        """Send email notification with scraping results."""
-        if not all([EMAIL_SENDER, EMAIL_PASSWORD, EMAIL_RECIPIENT]):
-            print("⚠️ Email settings not configured, skipping notification")
-            return False
-
-        try:
-            # Create email
-            msg = MIMEMultipart()
-            msg['From'] = EMAIL_SENDER
-            msg['To'] = EMAIL_RECIPIENT
-            msg['Subject'] = f"[채용공고 스크래퍼] 스크랩 완료 ✅"
-
-            # Email body
-            body = f"""
-스크랩이 완료되었습니다!
-
-📊 결과:
-- 전체 공고: {stats['total']}개
-- 새로운 공고: {stats['new']}개 ✨
-- 중복 제외: {stats['skipped']}개
-- 오류: {stats['errors']}개
-
-⏰ 완료 시간: {datetime.now(ZoneInfo("Asia/Seoul")).strftime('%Y-%m-%d %H:%M:%S')}
-
-Notion 데이터베이스를 확인하세요!
-"""
-
-            msg.attach(MIMEText(body, 'plain', 'utf-8'))
-
-            # Send email
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                server.starttls()
-                server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                server.send_message(msg)
-
-            print("✅ 이메일 알림 전송 완료")
-            return True
-
-        except Exception as e:
-            print(f"❌ 이메일 전송 실패: {e}")
-            return False
-
     def upload_jobs(self, jobs: List[Dict[str, Any]]) -> Dict[str, int]:
         """Upload new jobs to Notion, skipping duplicates."""
         existing_urls = self.get_existing_urls()
-
+        
         stats = {
             'total': len(jobs),
             'new': 0,
             'skipped': 0,
             'errors': 0
         }
-
+        
         for job in jobs:
             if job['url'] in existing_urls:
                 stats['skipped'] += 1
@@ -179,8 +131,5 @@ Notion 데이터베이스를 확인하세요!
                     stats['new'] += 1
                 else:
                     stats['errors'] += 1
-
-        # Send completion email
-        self.send_completion_email(stats)
-
+        
         return stats
