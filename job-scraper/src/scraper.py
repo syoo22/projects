@@ -1,0 +1,83 @@
+import requests
+import time
+from typing import List, Dict, Any
+from datetime import datetime
+from config import API_BASE_URL, PER_PAGE, REQUEST_DELAY, MAX_PAGES, KEYWORDS, JOB_DETAIL_URL_TEMPLATE
+
+def parse_date(date_string: str) -> str:
+    """Parse ISO8601 date string and return YYYY-MM-DD format."""
+    if not date_string:
+        return None
+    try:
+        dt = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        return dt.strftime('%Y-%m-%d')
+    except Exception as e:
+        print(f"Error parsing date {date_string}: {e}")
+        return None
+
+def matches_keywords(employments: List[Dict[str, Any]]) -> bool:
+    """Check if any job field matches keywords (or return True if no keywords specified)."""
+    if not KEYWORDS:
+        return True
+    
+    fields = [emp.get('field', '').lower() for emp in employments]
+    return any(keyword.lower() in ' '.join(fields) for keyword in KEYWORDS)
+
+def scrape_jobs() -> List[Dict[str, Any]]:
+    """
+    Fetch job postings from jasoseol.com API.
+    Returns list of job dictionaries.
+    """
+    jobs = []
+    
+    for page in range(1, MAX_PAGES + 1):
+        try:
+            url = f"{API_BASE_URL}/employment_companies"
+            params = {
+                "page": page,
+                "per_page": PER_PAGE
+            }
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            companies = data.get('data', [])
+            
+            if not companies:
+                print(f"No more data at page {page}")
+                break
+            
+            for company in companies:
+                # Extract relevant fields
+                job = {
+                    'id': company.get('id'),
+                    'title': company.get('title'),
+                    'company_name': company.get('name'),
+                    'end_time': parse_date(company.get('end_time')),
+                    'employments': company.get('employments', []),
+                    'url': JOB_DETAIL_URL_TEMPLATE.format(id=company.get('id'))
+                }
+                
+                # Filter by keywords
+                if matches_keywords(job['employments']):
+                    jobs.append(job)
+            
+            print(f"Fetched page {page}: {len(companies)} items")
+            time.sleep(REQUEST_DELAY)
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching page {page}: {e}")
+            break
+    
+    print(f"Total jobs scraped: {len(jobs)}")
+    return jobs
+
+def get_job_fields(job: Dict[str, Any]) -> List[str]:
+    """Extract and deduplicate job field tags."""
+    fields = set()
+    for emp in job.get('employments', []):
+        field = emp.get('field', '').strip()
+        if field:
+            fields.add(field)
+    return sorted(list(fields))
