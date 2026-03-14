@@ -68,7 +68,7 @@ class NotionUploader:
                         }
                     ]
                 },
-                "시작일": {
+                "공고 시작일": {
                     "date": {
                         "start": job['start_time'] if job['start_time'] else None
                     }
@@ -94,8 +94,8 @@ class NotionUploader:
             }
             
             # Remove empty date properties
-            if not properties.get("시작일"):
-                del properties["시작일"]
+            if not properties.get("공고 시작일"):
+                del properties["공고 시작일"]
             if not properties.get("마감일"):
                 del properties["마감일"]
             
