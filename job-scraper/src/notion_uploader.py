@@ -1,6 +1,6 @@
 from notion_client import Client
 from typing import List, Dict, Any, Set
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from config import NOTION_TOKEN, DATABASE_ID
 from scraper import get_job_fields
 
@@ -75,7 +75,7 @@ class NotionUploader:
                 } if job['start_time'] else {},
                 "마감일": {
                     "date": {
-                        "start": job['end_time'] if job['end_time'] else None
+                        "start": job['end_time'] + "T23:59:59" if job['end_time'] else None
                     }
                 } if job['end_time'] else {},
                 "직무 태그": {
@@ -88,7 +88,7 @@ class NotionUploader:
                 },
                 "스크랩 날짜": {
                     "date": {
-                        "start": datetime.now().strftime('%Y-%m-%d')
+                        "start": datetime.now(tz=timezone(timedelta(hours=9))).strftime('%Y-%m-%dT%H:%M:%S')
                     }
                 }
             }
