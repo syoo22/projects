@@ -5,13 +5,14 @@ from datetime import datetime, timezone, timedelta
 from config import API_BASE_URL, PER_PAGE, REQUEST_DELAY, MAX_PAGES, REQUIRED_KEYWORD, CUTOFF_DATE, JOB_DETAIL_URL_TEMPLATE
 
 def parse_date(date_string: str) -> str:
-    """Parse ISO8601 date string and return YYYY-MM-DDTHH:MM:SS format (KST)."""
+    """Parse ISO8601 date string and return YYYY-MM-DDTHH:MM:SS format."""
     if not date_string:
         return None
     try:
-        dt = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
-        kst = dt.astimezone(timezone(timedelta(hours=9)))
-        return kst.strftime('%Y-%m-%dT%H:%M:%S')
+        # Remove 'Z' suffix - API returns KST time with Z notation
+        clean_date = date_string.replace('Z', '')
+        # Extract date and time parts (format: YYYY-MM-DDTHH:MM:SS)
+        return clean_date[:19]  # Keep only date and time without milliseconds
     except Exception as e:
         print(f"Error parsing date {date_string}: {e}")
         return None
