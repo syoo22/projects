@@ -2,7 +2,7 @@ import requests
 import time
 from typing import List, Dict, Any
 from datetime import datetime, timezone, timedelta
-from config import API_BASE_URL, PER_PAGE, REQUEST_DELAY, MAX_PAGES, COMPANY_SIZES, REQUIRED_KEYWORD, CUTOFF_DATE, JOB_DETAIL_URL_TEMPLATE
+from config import API_BASE_URL, PER_PAGE, REQUEST_DELAY, MAX_PAGES, REQUIRED_KEYWORD, CUTOFF_DATE, JOB_DETAIL_URL_TEMPLATE
 
 def parse_date(date_string: str) -> str:
     """Parse ISO8601 date string and return YYYY-MM-DDTHH:MM:SS format (KST)."""
