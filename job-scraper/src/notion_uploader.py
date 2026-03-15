@@ -70,7 +70,7 @@ class NotionUploader:
                 },
                 "공고 시작일": {
                     "date": {
-                        "start": job['start_time'] if job['start_time'] else None
+                        "start": job['start_time'] + "+09:00" if job['start_time'] else None
                     }
                 } if job['start_time'] else {},
                 "마감일": {
