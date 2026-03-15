@@ -75,7 +75,7 @@ class NotionUploader:
                 } if job['start_time'] else {},
                 "마감일": {
                     "date": {
-                        "start": job['end_time'] + "T23:59:59" if job['end_time'] else None
+                        "start": job['end_time'] if job['end_time'] else None
                     }
                 } if job['end_time'] else {},
                 "직무 태그": {
