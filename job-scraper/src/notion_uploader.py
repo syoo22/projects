@@ -88,7 +88,7 @@ class NotionUploader:
                 },
                 "스크랩 날짜": {
                     "date": {
-                        "start": datetime.now(tz=timezone(timedelta(hours=9))).strftime('%Y-%m-%dT%H:%M:%S')
+                        "start": datetime.now(tz=timezone(timedelta(hours=9))).isoformat(timespec='seconds')
                     }
                 }
             }
